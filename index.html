@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lawncare Assistant - Eastern NC</title>
+    <title>Lawncare Assistant</title>
     <style>
         * {
             margin: 0;
@@ -127,6 +127,38 @@
             border-top: 1px solid #e0e0e0;
         }
 
+        .image-preview {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .image-preview img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .image-preview button {
+            margin-left: auto;
+            padding: 5px 15px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .image-preview button:hover {
+            background: #c82333;
+        }
+
         .chat-input-wrapper {
             display: flex;
             gap: 10px;
@@ -145,6 +177,29 @@
 
         #userInput:focus {
             border-color: #2ecc71;
+        }
+
+        .upload-btn {
+            width: 50px;
+            height: 50px;
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.3s;
+        }
+
+        .upload-btn:hover {
+            background: #e9ecef;
+            border-color: #2ecc71;
+        }
+
+        .upload-btn input {
+            display: none;
         }
 
         #sendButton {
@@ -236,24 +291,41 @@
     <div class="chat-container">
         <div class="chat-header">
             <h1>🌱 Lawncare Assistant</h1>
-            <p>Expert advice for Eastern NC lawns</p>
+            <p>Expert lawn care advice for any region</p>
         </div>
         
         <div class="chat-messages" id="chatMessages">
             <div class="message bot">
                 <div class="message-avatar">🌱</div>
-                <div class="message-content">Hi! I'm your Eastern NC lawncare expert. Ask me about pre-emergent timing, fertilizer schedules, grass types, pest control, or any lawn care questions!
+                <div class="message-content">Hi! I'm your lawncare expert. I can help with:
+
+• Pre-emergent and fertilizer timing
+• Grass type selection and care
+• Weed and pest identification (upload a photo!)
+• Seasonal maintenance advice
+• Any lawn care questions
 
 What can I help you with today?</div>
             </div>
         </div>
 
         <div class="chat-input-container">
+            <div id="imagePreview" class="image-preview">
+                <img src="" alt="Preview">
+                <span>Image selected</span>
+                <button id="removeImage">Remove</button>
+            </div>
+            
             <div class="chat-input-wrapper">
+                <label class="upload-btn" title="Upload image to identify weeds/grass">
+                    📷
+                    <input type="file" id="imageUpload" accept="image/*">
+                </label>
+                
                 <input 
                     type="text" 
                     id="userInput" 
-                    placeholder="Ask about lawn care..."
+                    placeholder="Ask about lawn care or upload a photo..."
                     autocomplete="off"
                 >
                 <button id="sendButton">Send</button>
