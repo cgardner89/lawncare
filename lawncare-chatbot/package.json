@@ -1,8 +1,0 @@
-{
-  "name": "lawncare-chatbot",
-  "version": "1.0.0",
-  "description": "Lawncare assistant chatbot with secure backend",
-  "dependencies": {
-    "node-fetch": "^2.6.7"
-  }
-}
