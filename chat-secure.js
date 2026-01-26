@@ -1,7 +1,7 @@
 // SECURE VERSION - Uses Netlify Function to keep API key hidden
 
-// System prompt for the lawncare assistant - IMPROVED FOR EASTERN NC
-const SYSTEM_PROMPT = `You are an expert lawncare assistant specializing in Eastern North Carolina lawn care.
+// System prompt for the lawncare assistant - GENERIC WITH SMART FOLLOW-UPS
+const SYSTEM_PROMPT = `You are an expert lawncare assistant with deep knowledge of lawn care across different regions and climates.
 
 RESPONSE FORMAT - CRITICAL:
 - Write in clear, short paragraphs (2-4 sentences each)
@@ -10,33 +10,63 @@ RESPONSE FORMAT - CRITICAL:
 - Never use markdown symbols like **, ##, or __
 - Keep total response under 200 words unless asked for detail
 
-EXPERTISE:
-You specialize in Eastern NC's transition zone climate where both warm-season (Bermuda, Zoysia, Centipede) and cool-season (Tall Fescue, Ryegrass) grasses grow.
+GATHERING CONTEXT - VERY IMPORTANT:
+Before giving specific advice, you need to know:
+1. Location/Region (e.g., "Eastern NC", "Florida", "Midwest", "Pacific Northwest")
+2. Grass type (e.g., Bermuda, Fescue, Zoysia, Kentucky Bluegrass)
 
-Key timing for Eastern NC:
-- Spring pre-emergent: Late February to early March (when soil hits 50°F for 3-5 days)
-- Fall pre-emergent: Mid-September to early October (when temps drop to 60-70°F at night)
-- Eastern NC is a transition zone - always ask grass type to give precise advice
+RULES FOR ASKING FOLLOW-UP QUESTIONS:
+- If the user mentions their location in the question → don't ask for location
+- If the user mentions grass type in the question → don't ask for grass type
+- If neither is mentioned → ask for BOTH in a friendly way
+- If only one is mentioned → only ask for the missing one
+- Give examples when asking (e.g., "What's your general location? For example: Eastern NC, Florida, Midwest")
 
-COMMON GRASS TYPES IN EASTERN NC:
-- Warm-season: Bermuda (most common), Zoysia, Centipede, St. Augustine
-- Cool-season: Tall Fescue (most common cool-season), Ryegrass blends
-- Many lawns have mixed grasses due to transition zone
+EXPERTISE AREAS:
+- Pre-emergent and post-emergent herbicide timing
+- Fertilization schedules for different grass types and regions
+- Mowing heights and frequencies
+- Watering schedules and drought management
+- Weed, pest, and disease identification and treatment
+- Grass type selection for different climates
+- Soil health and pH management
+- Seasonal lawn care for all U.S. climate zones
+
+CLIMATE ZONES YOU KNOW:
+- Cool-season zones: Northern U.S., higher elevations
+- Warm-season zones: Southern U.S., coastal areas
+- Transition zones: Mid-Atlantic, parts of Southeast and Midwest
+- Arid zones: Southwest, desert regions
 
 RESPONSE STYLE:
-- Start with a direct answer
-- Follow with 1-2 short paragraphs of explanation
+- Start with a direct answer if you have enough info
+- If you need more info, ask for it conversationally
 - Use bullets only when listing specific items or steps
-- End with a follow-up question if clarification would help
-- Be conversational and friendly, not robotic
-- Never say "in Eastern NC" repeatedly - they already know where they are
+- Be friendly and conversational, not robotic
+- Provide region-specific timing when you know the location
 
-EXAMPLE GOOD RESPONSE:
-"Apply spring pre-emergent in late February to early March. This targets crabgrass before it germinates.
+EXAMPLE RESPONSES:
 
-The key is soil temperature. You want consistent 50°F for 3-5 days, which usually happens in the 2nd-3rd week of February here.
+User: "When should I apply pre-emergent?"
+You: "I'd be happy to help with pre-emergent timing! To give you the most accurate advice, I need two things:
 
-What type of grass do you have? That'll help me give you more specific timing."
+What's your general location? For example: Eastern NC, Florida, Texas, Midwest, etc.
+
+What type of grass do you have? For example: Bermuda, Fescue, Zoysia, Bluegrass, etc."
+
+User: "When should I apply pre-emergent to my Bermuda?"
+You: "For Bermuda grass, spring pre-emergent timing depends on your region since soil temperature is the key factor.
+
+What's your general location? For example: Eastern NC, Georgia, Texas, California, etc.
+
+Once I know that, I can give you the exact timing for your area!"
+
+User: "I'm in Eastern NC. When should I apply pre-emergent to my Bermuda?"
+You: "For Bermuda in Eastern NC, apply spring pre-emergent in late February to early March. You're aiming for when soil temps hit 50°F consistently for 3-5 days.
+
+This timing stops crabgrass before it germinates. In your area, this is typically the 2nd-3rd week of February through early March.
+
+Also consider a fall application in mid-September to early October to catch winter annuals."
 
 NEVER format like this:
 "## Spring Pre-Emergent **Apply in late February** - This is **most important**"
@@ -50,17 +80,60 @@ let conversationHistory = [];
 const chatMessages = document.getElementById('chatMessages');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
+const imageUpload = document.getElementById('imageUpload');
+const imagePreview = document.getElementById('imagePreview');
+const removeImageBtn = document.getElementById('removeImage');
+
+let uploadedImage = null;
 
 // Event listeners
 sendButton.addEventListener('click', sendMessage);
 userInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
         sendMessage();
     }
 });
 
-// Add message to chat - IMPROVED WITH BETTER FORMATTING
-function addMessage(content, isUser = false) {
+imageUpload.addEventListener('change', handleImageUpload);
+removeImageBtn.addEventListener('click', removeImage);
+
+// Handle image upload
+function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        showError('Image too large. Please upload an image under 5MB.');
+        return;
+    }
+    
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+        showError('Please upload an image file (JPG, PNG, etc.)');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        uploadedImage = e.target.result;
+        imagePreview.querySelector('img').src = uploadedImage;
+        imagePreview.style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+}
+
+// Remove uploaded image
+function removeImage() {
+    uploadedImage = null;
+    imageUpload.value = '';
+    imagePreview.style.display = 'none';
+    imagePreview.querySelector('img').src = '';
+}
+
+// Add message to chat - IMPROVED WITH BETTER FORMATTING AND IMAGE SUPPORT
+function addMessage(content, isUser = false, imageData = null) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
     
@@ -71,6 +144,17 @@ function addMessage(content, isUser = false) {
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
     
+    // If there's an image, add it first
+    if (imageData) {
+        const img = document.createElement('img');
+        img.src = imageData;
+        img.style.maxWidth = '200px';
+        img.style.borderRadius = '8px';
+        img.style.marginBottom = '10px';
+        img.style.display = 'block';
+        contentDiv.appendChild(img);
+    }
+    
     // Clean up markdown formatting that might come from Claude
     const cleanContent = content
         .replace(/\*\*/g, '')      // Remove bold markdown
@@ -79,7 +163,8 @@ function addMessage(content, isUser = false) {
         .replace(/\*/g, '')        // Remove remaining asterisks
         .trim();
     
-    contentDiv.textContent = cleanContent;
+    const textNode = document.createTextNode(cleanContent);
+    contentDiv.appendChild(textNode);
     
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(contentDiv);
@@ -128,24 +213,62 @@ function showError(message) {
     setTimeout(() => errorDiv.remove(), 5000);
 }
 
-// Send message via Netlify Function (SECURE)
+// Send message via Netlify Function (SECURE) - WITH IMAGE SUPPORT
 async function sendMessage() {
     const message = userInput.value.trim();
     
-    if (!message) return;
+    if (!message && !uploadedImage) return;
     
     // Disable input while processing
     userInput.disabled = true;
     sendButton.disabled = true;
+    imageUpload.disabled = true;
     
-    // Add user message to chat
-    addMessage(message, true);
+    // Prepare message content
+    let messageContent;
+    let displayMessage = message || "What's this weed?";
+    
+    if (uploadedImage) {
+        // If there's an image, create a multi-part message
+        messageContent = [
+            {
+                type: "image",
+                source: {
+                    type: "base64",
+                    media_type: "image/jpeg",
+                    data: uploadedImage.split(',')[1] // Remove data:image/jpeg;base64, prefix
+                }
+            }
+        ];
+        
+        if (message) {
+            messageContent.push({
+                type: "text",
+                text: message
+            });
+        } else {
+            messageContent.push({
+                type: "text",
+                text: "Can you identify this weed or grass? What is it and how should I deal with it?"
+            });
+        }
+        
+        // Add user message with image to chat
+        addMessage(displayMessage, true, uploadedImage);
+    } else {
+        // Text only message
+        messageContent = message;
+        addMessage(message, true);
+    }
+    
     userInput.value = '';
+    const currentImage = uploadedImage;
+    removeImage(); // Clear the image preview
     
     // Add to conversation history
     conversationHistory.push({
         role: 'user',
-        content: message
+        content: messageContent
     });
     
     // Show typing indicator
@@ -196,6 +319,7 @@ async function sendMessage() {
         // Re-enable input
         userInput.disabled = false;
         sendButton.disabled = false;
+        imageUpload.disabled = false;
         userInput.focus();
     }
 }
