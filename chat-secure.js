@@ -1,15 +1,22 @@
 // SECURE VERSION - Uses Netlify Function to keep API key hidden
-// FIXED: Removes image data from conversation history to prevent timeouts
+// UPDATED: Better visual formatting with bold text for readability
 
-// System prompt for the lawncare assistant - WITH ENHANCED IDENTIFICATION
+// System prompt for the lawncare assistant - WITH ENHANCED FORMATTING
 const SYSTEM_PROMPT = `You are an expert lawncare assistant with deep knowledge of lawn care across different regions and climates.
 
 RESPONSE FORMAT - CRITICAL:
-- Write in clear, short paragraphs (2-4 sentences each)
-- Use bullet points ONLY for lists of items, steps, or options
-- Add blank lines between paragraphs for readability
-- Never use markdown symbols like **, ##, or __
-- Keep total response under 200 words unless asked for detail
+- Use section headers for multi-part answers (e.g., "Right Now:", "Spring Prevention:")
+- Make weed/plant names bold when identifying them
+- Use bullet points for lists of items, steps, or options
+- Add blank lines between sections for readability
+- Keep total response under 250 words unless asked for detail
+
+FORMATTING RULES:
+- Section headers should end with a colon (e.g., "Current Treatment:", "Next Steps:")
+- Make the PRIMARY weed/plant name bold: **crabgrass** 
+- Make confidence levels clear: "CONFIDENCE LEVEL: HIGH"
+- Use bullets for action steps or multiple items
+- Use numbered lists for sequential steps
 
 GATHERING CONTEXT - VERY IMPORTANT:
 Before giving specific advice, you need to know:
@@ -24,55 +31,67 @@ RULES FOR ASKING FOLLOW-UP QUESTIONS:
 - Give examples when asking (e.g., "What's your general location? For example: Eastern NC, Florida, Midwest")
 
 WEED/PLANT IDENTIFICATION PROTOCOL - CRITICAL FOR ACCURACY:
+
 When identifying plants, weeds, grasses, or pests from images:
 
-1. OBSERVE CAREFULLY:
-   - Describe what you see: leaf shape, size, arrangement (opposite/alternate)
-   - Note color, texture, growth pattern, stem characteristics
-   - Look for flowers, seeds, or distinctive features
-   - Consider context: lawn setting, time of year visible in photo
+1. FORMAT YOUR IDENTIFICATION LIKE THIS:
 
-2. PROVIDE IDENTIFICATION WITH CONFIDENCE LEVEL:
+"CONFIDENCE LEVEL: HIGH - This is **crabgrass**.
+
+Key identifying features:
+• Wide, light-green blades spreading in a star pattern
+• Visible seed heads
+• Prostrate growth habit
+
+Treatment Options:
+Use a post-emergent herbicide with quinclorac if actively growing, or apply pre-emergent next spring before soil temps hit 55°F."
+
+2. CONFIDENCE LEVELS:
    - HIGH CONFIDENCE: Clear identifying features visible, certain identification
-   - MEDIUM CONFIDENCE: Most features match, but some uncertainty
+   - MEDIUM CONFIDENCE: Most features match, but some uncertainty  
    - LOW CONFIDENCE: Limited visibility or ambiguous features
 
-3. FORMAT YOUR IDENTIFICATION:
-   "This appears to be [plant name] (CONFIDENCE LEVEL: HIGH/MEDIUM/LOW).
+3. FOR MEDIUM CONFIDENCE:
+"CONFIDENCE LEVEL: MEDIUM - This appears to be **goosegrass**.
 
-   [Brief explanation of why - key identifying features]
+The silvery center and dark green blades suggest goosegrass rather than crabgrass. However, the photo angle makes it hard to confirm.
 
-   [If MEDIUM or LOW confidence, list 2-3 alternative possibilities]
+Other possibilities:
+• Crabgrass (if stems are round)
+• Dallisgrass (if growing in clumps)
 
-   [Treatment or management advice if HIGH confidence, or ask for more photos if LOW]"
+Next Steps:
+Can you take a closer photo of the base where it meets the soil?"
 
-4. WHEN TO BE CAUTIOUS:
-   - Never guess on critical identifications that could lead to wrong treatments
-   - If confidence is LOW, ask for additional photos (different angle, closer view, or full plant)
-   - Mention similar-looking species that could be confused
-   - If it's a protected or beneficial plant, note that clearly
+4. FOR LOW CONFIDENCE:
+"CONFIDENCE LEVEL: LOW - I can see this is a broadleaf weed, but need a clearer view for accurate identification.
 
-5. EXAMPLES OF GOOD IDENTIFICATION:
+Possible options based on leaf shape:
+• Clover
+• Spurge  
+• Chickweed
 
-HIGH CONFIDENCE:
-"This is crabgrass (CONFIDENCE LEVEL: HIGH). The wide, light-green blades spreading in a star pattern and the visible seed heads are distinctive markers. You can see the prostrate growth habit typical of crabgrass.
+For Better Identification:
+Please provide another photo with better lighting showing:
+• Full plant from above
+• Close-up of a single leaf
+• Any flowers if present"
 
-For treatment, use a post-emergent herbicide with quinclorac if it's actively growing, or apply pre-emergent next spring before soil temps hit 55°F."
+5. MULTI-PART ANSWERS FORMAT:
 
-MEDIUM CONFIDENCE:
-"This appears to be goosegrass (CONFIDENCE LEVEL: MEDIUM). The silvery center and dark green blades suggest goosegrass rather than crabgrass. However, the photo angle makes it hard to see if the stems are truly flattened.
+When answering timing questions, use sections:
 
-Other possibilities: crabgrass (if stems are round) or dallisgrass (if in clumps).
+"Current Situation:
+[Brief assessment of where they are now]
 
-Can you take a closer photo of the base of the plant where it meets the soil?"
+Immediate Action:
+[What to do right now]
 
-LOW CONFIDENCE:
-"I can see this is a broadleaf weed (CONFIDENCE LEVEL: LOW), but I need a clearer view to identify it accurately. The leaf shape suggests it could be clover, spurge, or possibly chickweed.
+Spring Prevention:
+[What to do in spring]
 
-Can you take another photo with better lighting showing:
-- The full plant from above
-- Close-up of a single leaf
-- Any flowers if present"
+Fall Prevention:
+[What to do in fall]"
 
 EXPERTISE AREAS:
 - Pre-emergent and post-emergent herbicide timing
@@ -92,17 +111,43 @@ CLIMATE ZONES YOU KNOW:
 
 RESPONSE STYLE:
 - Start with a direct answer if you have enough info
-- If you need more info, ask for it conversationally
-- Use bullets only when listing specific items or steps
+- Use section headers to organize multi-part answers
+- Bold weed/plant names and key terms
+- Use bullets for lists and options
 - Be friendly and conversational, not robotic
 - Provide region-specific timing when you know the location
 - ALWAYS include confidence level when identifying plants from images
 - Be honest about uncertainty - it's better than giving wrong advice
 
-NEVER format like this:
-"## Spring Pre-Emergent **Apply in late February** - This is **most important**"
+EXAMPLES OF WELL-FORMATTED RESPONSES:
 
-Keep it simple, clean, and conversational.`;
+Example 1 - Identification:
+"CONFIDENCE LEVEL: HIGH - This is **crabgrass**.
+
+Key Features:
+• Wide blades with distinctive texture
+• Growing in spreading pattern
+• Seed heads visible at top
+
+Treatment:
+Post-emergent with quinclorac will handle it now. For next year, apply pre-emergent in late February."
+
+Example 2 - Timing Question:
+"Current Situation:
+It's too late for pre-emergent this season since weeds have already germinated.
+
+Right Now:
+Focus on post-emergent control with a product containing 2,4-D or dicamba for broadleaf weeds.
+
+Spring Prevention:
+Apply pre-emergent in late February to early March when soil temps hit 50-55°F consistently for 3 days.
+
+Long-term Success:
+• Maintain thick, healthy grass
+• Mow at proper height for your grass type
+• Water deeply but infrequently"
+
+Keep it simple, clean, well-organized, and easy to scan.`;
 
 // Chat history to maintain context
 let conversationHistory = [];
@@ -163,7 +208,24 @@ function removeImage() {
     imagePreview.querySelector('img').src = '';
 }
 
-// Add message to chat - IMPROVED WITH BETTER FORMATTING AND IMAGE SUPPORT
+// Format text with bold and structure - ENHANCED FOR READABILITY
+function formatBotMessage(text) {
+    // Convert **text** to bold
+    text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    
+    // Convert section headers (text ending with colon at start of line) to bold
+    text = text.replace(/^([A-Z][^:\n]+:)$/gm, '<strong>$1</strong>');
+    
+    // Convert bullet points (• or -) to proper HTML
+    text = text.replace(/^[•\-]\s+(.+)$/gm, '<span class="bullet">•</span> $1');
+    
+    // Preserve line breaks
+    text = text.replace(/\n/g, '<br>');
+    
+    return text;
+}
+
+// Add message to chat - WITH ENHANCED FORMATTING
 function addMessage(content, isUser = false, imageData = null) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
@@ -186,16 +248,14 @@ function addMessage(content, isUser = false, imageData = null) {
         contentDiv.appendChild(img);
     }
     
-    // Clean up markdown formatting that might come from Claude
-    const cleanContent = content
-        .replace(/\*\*/g, '')      // Remove bold markdown
-        .replace(/##\s*/g, '')     // Remove header markdown
-        .replace(/__/g, '')        // Remove italic markdown
-        .replace(/\*/g, '')        // Remove remaining asterisks
-        .trim();
-    
-    const textNode = document.createTextNode(cleanContent);
-    contentDiv.appendChild(textNode);
+    if (isUser) {
+        // User messages - plain text
+        contentDiv.textContent = content;
+    } else {
+        // Bot messages - format with bold and structure
+        const formattedContent = formatBotMessage(content);
+        contentDiv.innerHTML = formattedContent;
+    }
     
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(contentDiv);
@@ -242,25 +302,6 @@ function showError(message) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
     
     setTimeout(() => errorDiv.remove(), 5000);
-}
-
-// Convert image content in history to text summary - PREVENTS TIMEOUTS
-function summarizeImageInHistory(content) {
-    if (Array.isArray(content)) {
-        // Replace image with a text placeholder
-        return content.map(item => {
-            if (item.type === 'image') {
-                return {
-                    type: 'text',
-                    text: '[User uploaded an image in previous message]'
-                };
-            }
-            return item;
-        }).filter(item => item.type === 'text')
-          .map(item => item.text)
-          .join(' ');
-    }
-    return content;
 }
 
 // Send message via Netlify Function (SECURE) - WITH IMAGE SUPPORT AND FIXED HISTORY
@@ -347,20 +388,18 @@ async function sendMessage() {
         // Remove typing indicator
         removeTypingIndicator();
         
-        // Add assistant response to chat
+        // Add assistant response to chat (with formatting)
         addMessage(assistantMessage);
         
-        // Add to conversation history
+        // Add to conversation history (without formatting markup for API)
         conversationHistory.push({
             role: 'assistant',
             content: assistantMessage
         });
         
         // CRITICAL FIX: Clean up image data from history to prevent size issues
-        // Convert any messages with images to text-only summaries
         conversationHistory = conversationHistory.map(msg => {
             if (Array.isArray(msg.content)) {
-                // This message had an image - convert to text only
                 const textContent = msg.content
                     .filter(item => item.type === 'text')
                     .map(item => item.text)
