@@ -1,4 +1,5 @@
 // SECURE VERSION - Uses Netlify Function to keep API key hidden
+// FIXED: Removes image data from conversation history to prevent timeouts
 
 // System prompt for the lawncare assistant - WITH ENHANCED IDENTIFICATION
 const SYSTEM_PROMPT = `You are an expert lawncare assistant with deep knowledge of lawn care across different regions and climates.
@@ -243,7 +244,26 @@ function showError(message) {
     setTimeout(() => errorDiv.remove(), 5000);
 }
 
-// Send message via Netlify Function (SECURE) - WITH IMAGE SUPPORT
+// Convert image content in history to text summary - PREVENTS TIMEOUTS
+function summarizeImageInHistory(content) {
+    if (Array.isArray(content)) {
+        // Replace image with a text placeholder
+        return content.map(item => {
+            if (item.type === 'image') {
+                return {
+                    type: 'text',
+                    text: '[User uploaded an image in previous message]'
+                };
+            }
+            return item;
+        }).filter(item => item.type === 'text')
+          .map(item => item.text)
+          .join(' ');
+    }
+    return content;
+}
+
+// Send message via Netlify Function (SECURE) - WITH IMAGE SUPPORT AND FIXED HISTORY
 async function sendMessage() {
     const message = userInput.value.trim();
     
@@ -334,6 +354,24 @@ async function sendMessage() {
         conversationHistory.push({
             role: 'assistant',
             content: assistantMessage
+        });
+        
+        // CRITICAL FIX: Clean up image data from history to prevent size issues
+        // Convert any messages with images to text-only summaries
+        conversationHistory = conversationHistory.map(msg => {
+            if (Array.isArray(msg.content)) {
+                // This message had an image - convert to text only
+                const textContent = msg.content
+                    .filter(item => item.type === 'text')
+                    .map(item => item.text)
+                    .join(' ');
+                
+                return {
+                    role: msg.role,
+                    content: textContent || '[Image was uploaded]'
+                };
+            }
+            return msg;
         });
         
         // Limit conversation history to last 10 exchanges
