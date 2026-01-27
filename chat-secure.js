@@ -179,15 +179,19 @@ function handleImageUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
     
-    // Check file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-        showError('Image too large. Please upload an image under 5MB.');
+    // Check file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+    if (file.size > maxSize) {
+        const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
+        showError(`Image too large (${fileSizeMB}MB). Please upload an image under 10MB.`);
+        imageUpload.value = ''; // Clear the input
         return;
     }
     
     // Check file type
     if (!file.type.startsWith('image/')) {
         showError('Please upload an image file (JPG, PNG, etc.)');
+        imageUpload.value = ''; // Clear the input
         return;
     }
     
