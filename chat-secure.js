@@ -1,4 +1,4 @@
-// SECURE VERSION - Uses Netlify Function to keep API key hidden
+// SECURE VERSION - Uses Cloudlare Function to keep API key hidden
 // UPDATED: Better visual formatting with bold text for readability
 
 // System prompt for the lawncare assistant - WITH ENHANCED FORMATTING
@@ -308,7 +308,7 @@ function showError(message) {
     setTimeout(() => errorDiv.remove(), 5000);
 }
 
-// Send message via Netlify Function (SECURE) - WITH IMAGE SUPPORT AND FIXED HISTORY
+// Send message via Cloudflare Function (SECURE) - WITH IMAGE SUPPORT AND FIXED HISTORY
 async function sendMessage() {
     const message = userInput.value.trim();
     
@@ -370,8 +370,8 @@ async function sendMessage() {
     showTypingIndicator();
     
     try {
-        // Call Netlify Function instead of API directly
-        const response = await fetch('/.netlify/functions/chat', {
+        // Call Cloudlare Function instead of API directly
+        const response = await fetch('https://lawnhelper.calebsgardner.workers.dev', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
