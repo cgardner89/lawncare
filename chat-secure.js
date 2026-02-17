@@ -1,7 +1,6 @@
-// SECURE VERSION - Uses Cloudlare Function to keep API key hidden
-// UPDATED: Better visual formatting with bold text for readability
+// SECURE VERSION - Uses Cloudflare Worker to keep API key hidden
+// UPDATED: HEIC detection, error recovery, better image handling
 
-// System prompt for the lawncare assistant - WITH ENHANCED FORMATTING
 const SYSTEM_PROMPT = `You are an expert lawncare assistant with deep knowledge of lawn care across different regions and climates.
 
 RESPONSE FORMAT - CRITICAL:
@@ -149,7 +148,7 @@ Long-term Success:
 
 Keep it simple, clean, well-organized, and easy to scan.`;
 
-// Chat history to maintain context
+// Chat history
 let conversationHistory = [];
 
 // DOM elements
@@ -170,18 +169,64 @@ userInput.addEventListener('keypress', (e) => {
         sendMessage();
     }
 });
-
 imageUpload.addEventListener('change', handleImageUpload);
 removeImageBtn.addEventListener('click', removeImage);
 
-// Handle image upload
-function handleImageUpload(e) {
+// Check if file is HEIC format
+function isHeicFile(file) {
+    return (
+        file.type === 'image/heic' ||
+        file.type === 'image/heif' ||
+        file.name.toLowerCase().endsWith('.heic') ||
+        file.name.toLowerCase().endsWith('.heif')
+    );
+}
+
+// Convert image to JPEG using canvas
+function convertToJpeg(dataUrl) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            const maxDimension = 1600;
+
+            if (width > maxDimension || height > maxDimension) {
+                if (width > height) {
+                    height = Math.round(height * maxDimension / width);
+                    width = maxDimension;
+                } else {
+                    width = Math.round(width * maxDimension / height);
+                    height = maxDimension;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = dataUrl;
+    });
+}
+
+// Handle image upload - WITH HEIC DETECTION AND CONVERSION
+async function handleImageUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Block HEIC files - browser canvas can't process them
+    if (isHeicFile(file)) {
+        showError('HEIC photos are not supported. Please take a screenshot of the photo, or change your iPhone camera settings to save as JPEG: Settings → Camera → Formats → Most Compatible.');
+        imageUpload.value = '';
+        return;
+    }
+
     // Check file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
+    if (file.size > 10 * 1024 * 1024) {
         const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
         showError(`Image too large (${fileSizeMB}MB). Please upload an image under 10MB.`);
         imageUpload.value = '';
@@ -196,73 +241,49 @@ function handleImageUpload(e) {
     }
 
     const reader = new FileReader();
-    reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-            // Convert ANY image format to JPEG using canvas
-            // This fixes HEIC and other unsupported formats
-            const canvas = document.createElement('canvas');
-            
-            // Resize if too large (max 1600px wide)
-            let width = img.width;
-            let height = img.height;
-            const maxDimension = 1600;
-            
-            if (width > maxDimension || height > maxDimension) {
-                if (width > height) {
-                    height = Math.round(height * maxDimension / width);
-                    width = maxDimension;
-                } else {
-                    width = Math.round(width * maxDimension / height);
-                    height = maxDimension;
-                }
-            }
-            
-            canvas.width = width;
-            canvas.height = height;
-            
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            // Convert to JPEG at 85% quality
-            uploadedImage = canvas.toDataURL('image/jpeg', 0.85);
+    reader.onload = async (e) => {
+        try {
+            // Convert to JPEG (handles PNG, WebP, etc.)
+            uploadedImage = await convertToJpeg(e.target.result);
             imagePreview.querySelector('img').src = uploadedImage;
             imagePreview.style.display = 'flex';
-        };
-        img.src = e.target.result;
+        } catch (err) {
+            showError('Could not process this image. Please try a different photo.');
+            imageUpload.value = '';
+        }
     };
     reader.readAsDataURL(file);
 }
-// Format text with bold and structure - ENHANCED FOR READABILITY
+
+// Remove uploaded image
+function removeImage() {
+    uploadedImage = null;
+    imageUpload.value = '';
+    imagePreview.style.display = 'none';
+    imagePreview.querySelector('img').src = '';
+}
+
+// Format bot message with bold and bullets
 function formatBotMessage(text) {
-    // Convert **text** to bold
     text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    
-    // Convert section headers (text ending with colon at start of line) to bold
     text = text.replace(/^([A-Z][^:\n]+:)$/gm, '<strong>$1</strong>');
-    
-    // Convert bullet points (• or -) to proper HTML
     text = text.replace(/^[•\-]\s+(.+)$/gm, '<span class="bullet">•</span> $1');
-    
-    // Preserve line breaks
     text = text.replace(/\n/g, '<br>');
-    
     return text;
 }
 
-// Add message to chat - WITH ENHANCED FORMATTING
+// Add message to chat
 function addMessage(content, isUser = false, imageData = null) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
-    
+
     const avatar = document.createElement('div');
     avatar.className = 'message-avatar';
     avatar.textContent = isUser ? '👤' : '🌱';
-    
+
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
-    
-    // If there's an image, add it first
+
     if (imageData) {
         const img = document.createElement('img');
         img.src = imageData;
@@ -272,21 +293,16 @@ function addMessage(content, isUser = false, imageData = null) {
         img.style.display = 'block';
         contentDiv.appendChild(img);
     }
-    
+
     if (isUser) {
-        // User messages - plain text
         contentDiv.textContent = content;
     } else {
-        // Bot messages - format with bold and structure
-        const formattedContent = formatBotMessage(content);
-        contentDiv.innerHTML = formattedContent;
+        contentDiv.innerHTML = formatBotMessage(content);
     }
-    
+
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(contentDiv);
     chatMessages.appendChild(messageDiv);
-    
-    // Scroll to bottom
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
@@ -295,15 +311,15 @@ function showTypingIndicator() {
     const typingDiv = document.createElement('div');
     typingDiv.className = 'message bot';
     typingDiv.id = 'typing-indicator';
-    
+
     const avatar = document.createElement('div');
     avatar.className = 'message-avatar';
     avatar.textContent = '🌱';
-    
+
     const indicator = document.createElement('div');
     indicator.className = 'typing-indicator active';
     indicator.innerHTML = '<span></span><span></span><span></span>';
-    
+
     typingDiv.appendChild(avatar);
     typingDiv.appendChild(indicator);
     chatMessages.appendChild(typingDiv);
@@ -313,9 +329,7 @@ function showTypingIndicator() {
 // Remove typing indicator
 function removeTypingIndicator() {
     const indicator = document.getElementById('typing-indicator');
-    if (indicator) {
-        indicator.remove();
-    }
+    if (indicator) indicator.remove();
 }
 
 // Show error message
@@ -325,111 +339,90 @@ function showError(message) {
     errorDiv.textContent = message;
     chatMessages.appendChild(errorDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
-    
-    setTimeout(() => errorDiv.remove(), 5000);
+    setTimeout(() => errorDiv.remove(), 7000);
 }
 
-// Send message via Cloudflare Function (SECURE) - WITH IMAGE SUPPORT AND FIXED HISTORY
+// Send message
 async function sendMessage() {
     const message = userInput.value.trim();
-    
     if (!message && !uploadedImage) return;
-    
-    // Disable input while processing
+
     userInput.disabled = true;
     sendButton.disabled = true;
     imageUpload.disabled = true;
-    
-    // Prepare message content
+
     let messageContent;
-    let displayMessage = message || "What's this weed?";
-    
+    const displayMessage = message || "What's this weed?";
+
     if (uploadedImage) {
-        // If there's an image, create a multi-part message
         messageContent = [
             {
                 type: "image",
                 source: {
                     type: "base64",
                     media_type: "image/jpeg",
-                    data: uploadedImage.split(',')[1] // Remove data:image/jpeg;base64, prefix
+                    data: uploadedImage.split(',')[1]
                 }
             }
         ];
-        
         if (message) {
-            messageContent.push({
-                type: "text",
-                text: message
-            });
+            messageContent.push({ type: "text", text: message });
         } else {
             messageContent.push({
                 type: "text",
                 text: "Can you identify this weed or grass? What is it and how should I deal with it?"
             });
         }
-        
-        // Add user message with image to chat
         addMessage(displayMessage, true, uploadedImage);
     } else {
-        // Text only message
         messageContent = message;
         addMessage(message, true);
     }
-    
+
     userInput.value = '';
-    const currentImage = uploadedImage;
-    removeImage(); // Clear the image preview
-    
-    // Add to conversation history
+    removeImage();
+
     conversationHistory.push({
         role: 'user',
         content: messageContent
     });
-    
-    // Show typing indicator
+
     showTypingIndicator();
-    
+
     try {
-        // Call Cloudlare Function instead of API directly
         const response = await fetch('https://lawnhelper.calebsgardner.workers.dev', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 system: SYSTEM_PROMPT,
                 messages: conversationHistory
             })
         });
-        
+
         if (!response.ok) {
+            // Remove the failed message from history so it doesn't get stuck
+            conversationHistory.pop();
             throw new Error(`Server Error: ${response.status}`);
         }
-        
+
         const data = await response.json();
         const assistantMessage = data.content[0].text;
-        
-        // Remove typing indicator
+
         removeTypingIndicator();
-        
-        // Add assistant response to chat (with formatting)
         addMessage(assistantMessage);
-        
-        // Add to conversation history (without formatting markup for API)
+
         conversationHistory.push({
             role: 'assistant',
             content: assistantMessage
         });
-        
-        // CRITICAL FIX: Clean up image data from history to prevent size issues
+
+        // Clean image data from history after successful response
         conversationHistory = conversationHistory.map(msg => {
             if (Array.isArray(msg.content)) {
                 const textContent = msg.content
                     .filter(item => item.type === 'text')
                     .map(item => item.text)
                     .join(' ');
-                
                 return {
                     role: msg.role,
                     content: textContent || '[Image was uploaded]'
@@ -437,18 +430,22 @@ async function sendMessage() {
             }
             return msg;
         });
-        
-        // Limit conversation history to last 10 exchanges
+
+        // Keep last 10 exchanges
         if (conversationHistory.length > 20) {
             conversationHistory = conversationHistory.slice(-20);
         }
-        
+
     } catch (error) {
         removeTypingIndicator();
+        // Remove failed message from history to prevent stuck state
+        if (conversationHistory.length > 0 && 
+            conversationHistory[conversationHistory.length - 1].role === 'user') {
+            conversationHistory.pop();
+        }
         showError(`Error: ${error.message}. Please try again.`);
         console.error('Error:', error);
     } finally {
-        // Re-enable input
         userInput.disabled = false;
         sendButton.disabled = false;
         imageUpload.disabled = false;
@@ -456,7 +453,6 @@ async function sendMessage() {
     }
 }
 
-// Auto-focus input on load
 window.addEventListener('load', () => {
     userInput.focus();
 });
