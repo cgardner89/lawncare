@@ -178,40 +178,61 @@ removeImageBtn.addEventListener('click', removeImage);
 function handleImageUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     // Check file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
         const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
         showError(`Image too large (${fileSizeMB}MB). Please upload an image under 10MB.`);
-        imageUpload.value = ''; // Clear the input
+        imageUpload.value = '';
         return;
     }
-    
+
     // Check file type
     if (!file.type.startsWith('image/')) {
         showError('Please upload an image file (JPG, PNG, etc.)');
-        imageUpload.value = ''; // Clear the input
+        imageUpload.value = '';
         return;
     }
-    
+
     const reader = new FileReader();
     reader.onload = (e) => {
-        uploadedImage = e.target.result;
-        imagePreview.querySelector('img').src = uploadedImage;
-        imagePreview.style.display = 'flex';
+        const img = new Image();
+        img.onload = () => {
+            // Convert ANY image format to JPEG using canvas
+            // This fixes HEIC and other unsupported formats
+            const canvas = document.createElement('canvas');
+            
+            // Resize if too large (max 1600px wide)
+            let width = img.width;
+            let height = img.height;
+            const maxDimension = 1600;
+            
+            if (width > maxDimension || height > maxDimension) {
+                if (width > height) {
+                    height = Math.round(height * maxDimension / width);
+                    width = maxDimension;
+                } else {
+                    width = Math.round(width * maxDimension / height);
+                    height = maxDimension;
+                }
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Convert to JPEG at 85% quality
+            uploadedImage = canvas.toDataURL('image/jpeg', 0.85);
+            imagePreview.querySelector('img').src = uploadedImage;
+            imagePreview.style.display = 'flex';
+        };
+        img.src = e.target.result;
     };
     reader.readAsDataURL(file);
 }
-
-// Remove uploaded image
-function removeImage() {
-    uploadedImage = null;
-    imageUpload.value = '';
-    imagePreview.style.display = 'none';
-    imagePreview.querySelector('img').src = '';
-}
-
 // Format text with bold and structure - ENHANCED FOR READABILITY
 function formatBotMessage(text) {
     // Convert **text** to bold
