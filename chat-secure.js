@@ -1,5 +1,5 @@
-// SECURE VERSION - Uses Cloudflare Worker to keep API key hidden
-// UPDATED: HEIC detection, error recovery, better image handling
+// SECURE VERSION - Cloudflare Worker backend
+// FINAL: Simple, reliable image handling
 
 const SYSTEM_PROMPT = `You are an expert lawncare assistant with deep knowledge of lawn care across different regions and climates.
 
@@ -118,40 +118,10 @@ RESPONSE STYLE:
 - ALWAYS include confidence level when identifying plants from images
 - Be honest about uncertainty - it's better than giving wrong advice
 
-EXAMPLES OF WELL-FORMATTED RESPONSES:
-
-Example 1 - Identification:
-"CONFIDENCE LEVEL: HIGH - This is **crabgrass**.
-
-Key Features:
-• Wide blades with distinctive texture
-• Growing in spreading pattern
-• Seed heads visible at top
-
-Treatment:
-Post-emergent with quinclorac will handle it now. For next year, apply pre-emergent in late February."
-
-Example 2 - Timing Question:
-"Current Situation:
-It's too late for pre-emergent this season since weeds have already germinated.
-
-Right Now:
-Focus on post-emergent control with a product containing 2,4-D or dicamba for broadleaf weeds.
-
-Spring Prevention:
-Apply pre-emergent in late February to early March when soil temps hit 50-55°F consistently for 3 days.
-
-Long-term Success:
-• Maintain thick, healthy grass
-• Mow at proper height for your grass type
-• Water deeply but infrequently"
-
 Keep it simple, clean, well-organized, and easy to scan.`;
 
-// Chat history
 let conversationHistory = [];
 
-// DOM elements
 const chatMessages = document.getElementById('chatMessages');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
@@ -161,7 +131,6 @@ const removeImageBtn = document.getElementById('removeImage');
 
 let uploadedImage = null;
 
-// Event listeners
 sendButton.addEventListener('click', sendMessage);
 userInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -172,17 +141,7 @@ userInput.addEventListener('keypress', (e) => {
 imageUpload.addEventListener('change', handleImageUpload);
 removeImageBtn.addEventListener('click', removeImage);
 
-// Check if file is HEIC format
-function isHeicFile(file) {
-    return (
-        file.type === 'image/heic' ||
-        file.type === 'image/heif' ||
-        file.name.toLowerCase().endsWith('.heic') ||
-        file.name.toLowerCase().endsWith('.heif')
-    );
-}
-
-// Convert image to JPEG using canvas
+// Convert image to JPEG
 function convertToJpeg(dataUrl) {
     return new Promise((resolve, reject) => {
         const img = new Image();
@@ -208,34 +167,24 @@ function convertToJpeg(dataUrl) {
             ctx.drawImage(img, 0, 0, width, height);
             resolve(canvas.toDataURL('image/jpeg', 0.85));
         };
-        img.onerror = () => reject(new Error('Failed to load image'));
+        img.onerror = () => reject(new Error('Cannot process this image format'));
         img.src = dataUrl;
     });
 }
 
-// Handle image upload - WITH HEIC DETECTION AND CONVERSION
 async function handleImageUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Block HEIC files - browser canvas can't process them
-    if (isHeicFile(file)) {
-        showError('HEIC photos are not supported. Please take a screenshot of the photo, or change your iPhone camera settings to save as JPEG: Settings → Camera → Formats → Most Compatible.');
-        imageUpload.value = '';
-        return;
-    }
-
-    // Check file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
         const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
-        showError(`Image too large (${fileSizeMB}MB). Please upload an image under 10MB.`);
+        showError(`Image too large (${fileSizeMB}MB). Maximum 10MB.`);
         imageUpload.value = '';
         return;
     }
 
-    // Check file type
     if (!file.type.startsWith('image/')) {
-        showError('Please upload an image file (JPG, PNG, etc.)');
+        showError('Please upload an image file.');
         imageUpload.value = '';
         return;
     }
@@ -243,19 +192,18 @@ async function handleImageUpload(e) {
     const reader = new FileReader();
     reader.onload = async (e) => {
         try {
-            // Convert to JPEG (handles PNG, WebP, etc.)
             uploadedImage = await convertToJpeg(e.target.result);
             imagePreview.querySelector('img').src = uploadedImage;
             imagePreview.style.display = 'flex';
         } catch (err) {
-            showError('Could not process this image. Please try a different photo.');
+            showError('This image format is not supported. iPhone users: Go to Settings → Camera → Formats → select "Most Compatible" to save photos as JPEG.');
             imageUpload.value = '';
+            console.error('Image conversion error:', err);
         }
     };
     reader.readAsDataURL(file);
 }
 
-// Remove uploaded image
 function removeImage() {
     uploadedImage = null;
     imageUpload.value = '';
@@ -263,7 +211,6 @@ function removeImage() {
     imagePreview.querySelector('img').src = '';
 }
 
-// Format bot message with bold and bullets
 function formatBotMessage(text) {
     text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     text = text.replace(/^([A-Z][^:\n]+:)$/gm, '<strong>$1</strong>');
@@ -272,7 +219,6 @@ function formatBotMessage(text) {
     return text;
 }
 
-// Add message to chat
 function addMessage(content, isUser = false, imageData = null) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
@@ -306,7 +252,6 @@ function addMessage(content, isUser = false, imageData = null) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Show typing indicator
 function showTypingIndicator() {
     const typingDiv = document.createElement('div');
     typingDiv.className = 'message bot';
@@ -326,23 +271,20 @@ function showTypingIndicator() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Remove typing indicator
 function removeTypingIndicator() {
     const indicator = document.getElementById('typing-indicator');
     if (indicator) indicator.remove();
 }
 
-// Show error message
 function showError(message) {
     const errorDiv = document.createElement('div');
     errorDiv.className = 'error-message';
     errorDiv.textContent = message;
     chatMessages.appendChild(errorDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
-    setTimeout(() => errorDiv.remove(), 7000);
+    setTimeout(() => errorDiv.remove(), 8000);
 }
 
-// Send message
 async function sendMessage() {
     const message = userInput.value.trim();
     if (!message && !uploadedImage) return;
@@ -351,8 +293,8 @@ async function sendMessage() {
     sendButton.disabled = true;
     imageUpload.disabled = true;
 
-    let messageContent;
     const displayMessage = message || "What's this weed?";
+    let messageContent;
 
     if (uploadedImage) {
         messageContent = [
@@ -363,16 +305,12 @@ async function sendMessage() {
                     media_type: "image/jpeg",
                     data: uploadedImage.split(',')[1]
                 }
+            },
+            {
+                type: "text",
+                text: message || "Can you identify this weed or grass? What is it and how should I deal with it?"
             }
         ];
-        if (message) {
-            messageContent.push({ type: "text", text: message });
-        } else {
-            messageContent.push({
-                type: "text",
-                text: "Can you identify this weed or grass? What is it and how should I deal with it?"
-            });
-        }
         addMessage(displayMessage, true, uploadedImage);
     } else {
         messageContent = message;
@@ -382,6 +320,7 @@ async function sendMessage() {
     userInput.value = '';
     removeImage();
 
+    // Add to history BEFORE sending
     conversationHistory.push({
         role: 'user',
         content: messageContent
@@ -400,12 +339,15 @@ async function sendMessage() {
         });
 
         if (!response.ok) {
-            // Remove the failed message from history so it doesn't get stuck
-            conversationHistory.pop();
             throw new Error(`Server Error: ${response.status}`);
         }
 
         const data = await response.json();
+        
+        if (!data.content || !data.content[0] || !data.content[0].text) {
+            throw new Error('Invalid response from server');
+        }
+
         const assistantMessage = data.content[0].text;
 
         removeTypingIndicator();
@@ -416,7 +358,7 @@ async function sendMessage() {
             content: assistantMessage
         });
 
-        // Clean image data from history after successful response
+        // Clean image data from history
         conversationHistory = conversationHistory.map(msg => {
             if (Array.isArray(msg.content)) {
                 const textContent = msg.content
@@ -431,19 +373,19 @@ async function sendMessage() {
             return msg;
         });
 
-        // Keep last 10 exchanges
+        // Keep last 20 messages
         if (conversationHistory.length > 20) {
             conversationHistory = conversationHistory.slice(-20);
         }
 
     } catch (error) {
         removeTypingIndicator();
-        // Remove failed message from history to prevent stuck state
-        if (conversationHistory.length > 0 && 
-            conversationHistory[conversationHistory.length - 1].role === 'user') {
-            conversationHistory.pop();
-        }
-        showError(`Error: ${error.message}. Please try again.`);
+        
+        // CRITICAL FIX: Remove the failed message from history
+        // This prevents the bad data from being sent again
+        conversationHistory.pop();
+        
+        showError(`${error.message}. Please try again with a different photo or refresh the page.`);
         console.error('Error:', error);
     } finally {
         userInput.disabled = false;
