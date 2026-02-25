@@ -755,4 +755,21 @@ async function sendMessage() {
 
 window.addEventListener('load', () => {
     userInput.focus();
+    
+    // Show welcome message with disclaimer on first load
+    setTimeout(() => {
+        const welcomeMessage = `👋 Welcome! I'm an AI lawn care assistant. I can help identify weeds, grasses, pests, and provide DIY care advice.
+
+**Important:** Like any AI, I can make mistakes. Before applying treatments:
+• Verify identifications are correct
+• Test products on a small area first
+• Always follow product label instructions
+• Results may vary by location and conditions
+
+By using this tool, you agree we're not liable for lawn, property, or health damage. Use at your own risk.
+
+What can I help with today?`;
+        
+        addMessage(welcomeMessage);
+    }, 500);
 });
