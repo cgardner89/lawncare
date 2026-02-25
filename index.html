@@ -3,8 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Lawncare Assistant</title>
     <style>
         * {
@@ -13,45 +11,25 @@
             box-sizing: border-box;
         }
 
-        html, body {
-            height: 100%;
-            width: 100%;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
             overflow: hidden;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
         .chat-container {
-            width: 100%;
-            height: 100%;
-            background: white;
+            flex: 1;
             display: flex;
             flex-direction: column;
-            position: relative;
-        }
-
-        /* Desktop view */
-        @media (min-width: 769px) {
-            body {
-                padding: 20px;
-            }
-            
-            .chat-container {
-                max-width: 800px;
-                height: 90vh;
-                border-radius: 20px;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            }
-            
-            .chat-header {
-                border-radius: 20px 20px 0 0;
-            }
+            background: white;
+            margin: 0;
+            border-radius: 0;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            max-height: 100vh;
         }
 
         .chat-header {
@@ -60,35 +38,41 @@
             padding: 20px;
             text-align: center;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            flex-shrink: 0;
         }
 
         .chat-header h1 {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 600;
-            margin-bottom: 4px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .chat-header p {
-            font-size: 13px;
+            font-size: 14px;
             opacity: 0.9;
+            margin-top: 5px;
         }
 
         .chat-messages {
             flex: 1;
             overflow-y: auto;
-            overflow-x: hidden;
-            padding: 15px;
+            padding: 20px;
             background: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
             -webkit-overflow-scrolling: touch;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
         }
 
         .message {
-            margin-bottom: 16px;
             display: flex;
-            gap: 10px;
-            animation: slideIn 0.3s ease;
-            width: 100%;
+            gap: 12px;
+            max-width: 85%;
+            animation: slideIn 0.3s ease-out;
         }
 
         @keyframes slideIn {
@@ -104,6 +88,7 @@
 
         .message.user {
             flex-direction: row-reverse;
+            align-self: flex-end;
         }
 
         .message-avatar {
@@ -131,7 +116,6 @@
             border-radius: 16px;
             line-height: 1.6;
             word-wrap: break-word;
-            white-space: pre-line;
             font-size: 15px;
         }
 
@@ -159,137 +143,124 @@
 
         .chat-input-container {
             padding: 12px 15px;
-            padding-bottom: max(12px, env(safe-area-inset-bottom));
             background: white;
             border-top: 1px solid #e0e0e0;
-            flex-shrink: 0;
-        }
-
-        .image-preview {
-            display: none;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-
-        .image-preview img {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 6px;
-        }
-
-        .image-preview span {
-            font-size: 13px;
-            color: #666;
-        }
-
-        .image-preview button {
-            margin-left: auto;
-            padding: 4px 12px;
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-
-        .image-preview button:hover {
-            background: #c82333;
-        }
-
-        .chat-input-wrapper {
             display: flex;
-            gap: 8px;
-            align-items: center;
+            gap: 10px;
+            align-items: flex-end;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom));
         }
 
-        #userInput {
-            flex: 1;
-            padding: 12px 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 22px;
-            font-size: 15px;
-            outline: none;
-            transition: border-color 0.3s;
-            background: white;
-        }
-
-        #userInput:focus {
-            border-color: #2ecc71;
-        }
-
-        .upload-btn {
-            width: 44px;
-            height: 44px;
-            background: #f8f9fa;
-            border: 2px solid #e0e0e0;
+        .image-upload-btn {
+            width: 40px;
+            height: 40px;
+            background: #f0f0f0;
+            border: none;
             border-radius: 50%;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 20px;
-            transition: all 0.3s;
+            transition: all 0.2s;
             flex-shrink: 0;
         }
 
-        .upload-btn:active {
-            background: #e9ecef;
+        .image-upload-btn:active {
+            background: #e0e0e0;
             transform: scale(0.95);
         }
 
-        .upload-btn input {
+        #imageUpload {
             display: none;
         }
 
-        #sendButton {
-            padding: 12px 20px;
+        .image-preview {
+            display: none;
+            position: relative;
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #2ecc71;
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .image-preview button {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 10px 15px;
+            font-size: 15px;
+            font-family: inherit;
+            resize: none;
+            max-height: 100px;
+            min-height: 40px;
+            outline: none;
+        }
+
+        .chat-input:focus {
+            border-color: #2ecc71;
+        }
+
+        .send-button {
+            width: 40px;
+            height: 40px;
             background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
             color: white;
             border: none;
-            border-radius: 22px;
-            font-size: 15px;
-            font-weight: 600;
+            border-radius: 50%;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s;
             flex-shrink: 0;
-            white-space: nowrap;
         }
 
-        #sendButton:active:not(:disabled) {
+        .send-button:active {
             transform: scale(0.95);
         }
 
-        #sendButton:disabled {
-            opacity: 0.6;
+        .send-button:disabled {
+            opacity: 0.5;
             cursor: not-allowed;
         }
 
         .typing-indicator {
-            display: none;
-            padding: 12px 16px;
-            background: white;
-            border-radius: 16px;
-            width: fit-content;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        }
-
-        .typing-indicator.active {
-            display: block;
+            display: flex;
+            gap: 4px;
+            padding: 16px;
         }
 
         .typing-indicator span {
-            display: inline-block;
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #2ecc71;
-            margin: 0 2px;
+            background: #999;
             animation: typing 1.4s infinite;
         }
 
@@ -307,7 +278,7 @@
                 opacity: 0.7;
             }
             30% {
-                transform: translateY(-8px);
+                transform: translateY(-10px);
                 opacity: 1;
             }
         }
@@ -315,72 +286,98 @@
         .error-message {
             background: #fee;
             color: #c33;
-            padding: 12px;
+            padding: 12px 16px;
             border-radius: 8px;
-            margin: 10px 0;
-            text-align: center;
-            font-size: 14px;
+            margin: 10px 20px;
+            border-left: 4px solid #c33;
+            animation: slideIn 0.3s ease-out;
         }
 
-        /* Mobile-specific adjustments */
+        /* Disclaimer Footer */
+        .disclaimer-footer {
+            background: #fff3cd;
+            border-top: 2px solid #ffc107;
+            padding: 8px 15px;
+            font-size: 13px;
+            color: #856404;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .disclaimer-footer:active {
+            background: #ffe8a1;
+        }
+
+        .disclaimer-short {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .disclaimer-toggle {
+            font-size: 18px;
+            transition: transform 0.3s;
+        }
+
+        .disclaimer-toggle.expanded {
+            transform: rotate(180deg);
+        }
+
+        .disclaimer-full {
+            display: none;
+            padding: 15px;
+            background: #fff3cd;
+            border-top: 1px solid #ffc107;
+            font-size: 13px;
+            color: #856404;
+            line-height: 1.6;
+        }
+
+        .disclaimer-full.show {
+            display: block;
+        }
+
+        .disclaimer-full strong {
+            color: #664d03;
+        }
+
+        .disclaimer-full ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .disclaimer-full li {
+            margin: 5px 0;
+        }
+
+        /* Mobile optimizations */
         @media (max-width: 768px) {
+            .chat-container {
+                border-radius: 0;
+                margin: 0;
+            }
+
             .chat-header h1 {
                 font-size: 20px;
             }
 
             .chat-header p {
-                font-size: 12px;
-            }
-
-            .message-content {
-                max-width: calc(100% - 50px);
-                font-size: 14px;
-            }
-
-            #sendButton {
-                padding: 12px 16px;
-                font-size: 14px;
-            }
-
-            .upload-btn {
-                width: 40px;
-                height: 40px;
-                font-size: 18px;
+                font-size: 13px;
             }
         }
 
-        /* Extra small phones */
         @media (max-width: 375px) {
-            .chat-input-wrapper {
-                gap: 6px;
+            .message {
+                max-width: 90%;
             }
 
-            #userInput {
-                padding: 10px 14px;
-                font-size: 14px;
+            .chat-input-container {
+                padding: 10px;
             }
-
-            #sendButton {
-                padding: 10px 14px;
-            }
-        }
-
-        /* Hide scrollbar but keep functionality */
-        .chat-messages::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .chat-messages::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .chat-messages::-webkit-scrollbar-thumb {
-            background: rgba(0,0,0,0.2);
-            border-radius: 3px;
-        }
-
-        .chat-messages::-webkit-scrollbar-thumb:hover {
-            background: rgba(0,0,0,0.3);
         }
     </style>
 </head>
@@ -390,46 +387,69 @@
             <h1>🌱 Lawncare Assistant</h1>
             <p>Expert lawn care advice for any region</p>
         </div>
-        
+
         <div class="chat-messages" id="chatMessages">
-            <div class="message bot">
-                <div class="message-avatar">🌱</div>
-                <div class="message-content">Hi! I'm your lawncare expert. I can help with:
+            <!-- Messages will appear here -->
+        </div>
 
-• Pre-emergent and fertilizer timing
-• Grass type selection and care
-• Weed and pest identification (upload a photo!)
-• Seasonal maintenance advice
-• Any lawn care questions
-
-What can I help you with today?</div>
+        <!-- Disclaimer Footer -->
+        <div class="disclaimer-footer" id="disclaimerFooter">
+            <div class="disclaimer-short">
+                <span>⚠️</span>
+                <span><strong>AI Assistant</strong> - Use at Your Own Risk</span>
             </div>
+            <span class="disclaimer-toggle" id="disclaimerToggle">▼</span>
+        </div>
+        <div class="disclaimer-full" id="disclaimerFull">
+            <strong>DISCLAIMER:</strong> This AI tool helps identify lawn issues and provides DIY solutions. Like any AI, it can make mistakes.
+            
+            <ul>
+                <li>Verify the identification is correct for your specific situation</li>
+                <li>Test products on a small area first to check for adverse reactions</li>
+                <li>Always read and follow product label instructions carefully</li>
+                <li>Results may vary based on your specific conditions</li>
+            </ul>
+
+            By using this service, you agree we are not liable for any damage to your lawn, property, or health. <strong>Use at your own risk.</strong>
         </div>
 
         <div class="chat-input-container">
-            <div id="imagePreview" class="image-preview">
-                <img src="" alt="Preview">
-                <span>Image selected</span>
-                <button id="removeImage">Remove</button>
-            </div>
+            <label for="imageUpload" class="image-upload-btn">📷</label>
+            <input type="file" id="imageUpload" accept="image/*" capture="environment">
             
-            <div class="chat-input-wrapper">
-                <label class="upload-btn" title="Upload image to identify weeds/grass">
-                    📷
-                    <input type="file" id="imageUpload" accept="image/*">
-                </label>
-                
-                <input 
-                    type="text" 
-                    id="userInput" 
-                    placeholder="Ask about lawn care..."
-                    autocomplete="off"
-                >
-                <button id="sendButton">Send</button>
+            <div class="image-preview" id="imagePreview">
+                <img src="" alt="Preview">
+                <button id="removeImage">×</button>
             </div>
+
+            <textarea 
+                id="userInput" 
+                class="chat-input" 
+                placeholder="Ask about lawn care..."
+                rows="1"
+            ></textarea>
+
+            <button id="sendButton" class="send-button">➤</button>
         </div>
     </div>
 
     <script src="chat-secure.js"></script>
+    <script>
+        // Disclaimer toggle functionality
+        const disclaimerFooter = document.getElementById('disclaimerFooter');
+        const disclaimerFull = document.getElementById('disclaimerFull');
+        const disclaimerToggle = document.getElementById('disclaimerToggle');
+
+        disclaimerFooter.addEventListener('click', () => {
+            disclaimerFull.classList.toggle('show');
+            disclaimerToggle.classList.toggle('expanded');
+        });
+
+        // Auto-resize textarea
+        userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+        });
+    </script>
 </body>
 </html>
