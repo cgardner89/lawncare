@@ -583,7 +583,11 @@ function addMessage(content, isUser = false, imageData = null) {
 
     const avatar = document.createElement('div');
     avatar.className = 'message-avatar';
-    avatar.textContent = isUser ? '👤' : '🌱';
+    if (isUser) {
+    avatar.textContent = '👤';
+} else {
+    avatar.innerHTML = '<img src="/lawnhelper-circle-32x32.png" style="width: 24px; height: 24px;">';
+}
 
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
