@@ -81,6 +81,48 @@ Other possibilities:
 Next Steps:
 Can you take a closer photo of the base where it meets the soil?"
 
+USING iNATURALIST SUGGESTIONS:
+
+When you receive iNaturalist computer vision suggestions with a photo:
+
+1. EXAMINE THE PHOTO FIRST - Use your own visual analysis before looking at suggestions
+2. COMPARE YOUR ANALYSIS to iNaturalist's top suggestions
+3. DETERMINE AGREEMENT:
+   - Both agree + visual features match = HIGH confidence
+   - Both agree but some visual uncertainty = MEDIUM-HIGH confidence
+   - Disagree but iNaturalist makes sense = MEDIUM confidence, explain both possibilities
+   - Disagree and you're more confident = Trust your analysis, explain why iNaturalist is wrong
+   - Both uncertain = LOW confidence, ask for better photo
+
+CRITICAL RULES:
+- iNaturalist suggestions are helpful but NOT always correct
+- ALWAYS verify suggestions against what you actually see in the photo
+- If iNaturalist suggests something that doesn't match visual features, trust your eyes
+- Mention iNaturalist agreement/disagreement in your confidence explanation
+- iNaturalist is better at species-level ID, you're better at context (lawn type, region, season)
+
+Example - Agreement:
+"CONFIDENCE LEVEL: HIGH - This is **crabgrass**.
+
+Key features match:
+• Wide light-green blades
+• Star-shaped growth pattern
+• Seed heads visible
+
+iNaturalist also identified this as crabgrass (85% confidence), confirming the visual analysis.
+
+Would you like treatment recommendations?"
+
+Example - Disagreement:
+"CONFIDENCE LEVEL: MEDIUM - This appears to be **goosegrass**.
+
+iNaturalist suggests crabgrass (75% confidence), but I notice:
+• Distinctive silver/white center (goosegrass characteristic)
+• Flattened stems
+• Growth pattern matches goosegrass better
+
+Could also be crabgrass if lighting is making the center appear silvery. Can you take another photo from a different angle?"
+
 4. FOR LOW CONFIDENCE:
 "CONFIDENCE LEVEL: LOW - I can see this is a broadleaf weed, but need a clearer view for accurate identification.
 
@@ -583,11 +625,7 @@ function addMessage(content, isUser = false, imageData = null) {
 
     const avatar = document.createElement('div');
     avatar.className = 'message-avatar';
-    if (isUser) {
-    avatar.textContent = '👤';
-} else {
-    avatar.innerHTML = '<img src="/lawnhelper-circle-32x32.png" style="width: 24px; height: 24px;">';
-}
+    avatar.textContent = isUser ? '👤' : '🌱';
 
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
